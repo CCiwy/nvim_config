@@ -49,8 +49,8 @@ local function save_profiles(threshold)
 end
 
 time([[Luarocks path setup]], true)
-local package_path_str = "/home/christian/.cache/nvim/packer_hererocks/2.1.1725453128/share/lua/5.1/?.lua;/home/christian/.cache/nvim/packer_hererocks/2.1.1725453128/share/lua/5.1/?/init.lua;/home/christian/.cache/nvim/packer_hererocks/2.1.1725453128/lib/luarocks/rocks-5.1/?.lua;/home/christian/.cache/nvim/packer_hererocks/2.1.1725453128/lib/luarocks/rocks-5.1/?/init.lua"
-local install_cpath_pattern = "/home/christian/.cache/nvim/packer_hererocks/2.1.1725453128/lib/lua/5.1/?.so"
+local package_path_str = "/home/christian/.cache/nvim/packer_hererocks/2.1.1736781742/share/lua/5.1/?.lua;/home/christian/.cache/nvim/packer_hererocks/2.1.1736781742/share/lua/5.1/?/init.lua;/home/christian/.cache/nvim/packer_hererocks/2.1.1736781742/lib/luarocks/rocks-5.1/?.lua;/home/christian/.cache/nvim/packer_hererocks/2.1.1736781742/lib/luarocks/rocks-5.1/?/init.lua"
+local install_cpath_pattern = "/home/christian/.cache/nvim/packer_hererocks/2.1.1736781742/lib/lua/5.1/?.so"
 if not string.find(package.path, package_path_str, 1, true) then
   package.path = package.path .. ';' .. package_path_str
 end
@@ -99,6 +99,11 @@ _G.packer_plugins = {
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/cmp-path",
     url = "https://github.com/hrsh7th/cmp-path"
   },
+  ["eslint.nvim"] = {
+    loaded = true,
+    path = "/home/christian/.local/share/nvim/site/pack/packer/start/eslint.nvim",
+    url = "https://github.com/MunifTanjim/eslint.nvim"
+  },
   ["git-blame.nvim"] = {
     loaded = true,
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/git-blame.nvim",
@@ -134,6 +139,11 @@ _G.packer_plugins = {
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/nvim-lspconfig",
     url = "https://github.com/neovim/nvim-lspconfig"
   },
+  ["nvim-tree.lua"] = {
+    loaded = true,
+    path = "/home/christian/.local/share/nvim/site/pack/packer/start/nvim-tree.lua",
+    url = "https://github.com/nvim-tree/nvim-tree.lua"
+  },
   ["nvim-treesitter"] = {
     loaded = true,
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/nvim-treesitter",
@@ -164,6 +174,14 @@ _G.packer_plugins = {
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/plenary.nvim",
     url = "https://github.com/nvim-lua/plenary.nvim"
   },
+  ["render-markdown.nvim"] = {
+    config = { "\27LJ\2\nA\0\0\3\0\3\0\a6\0\0\0'\2\1\0B\0\2\0029\0\2\0004\2\0\0B\0\2\1K\0\1\0\nsetup\20render-markdown\frequire\0" },
+    load_after = {},
+    loaded = true,
+    needs_bufread = false,
+    path = "/home/christian/.local/share/nvim/site/pack/packer/opt/render-markdown.nvim",
+    url = "https://github.com/MeanderingProgrammer/render-markdown.nvim"
+  },
   ["telescope.nvim"] = {
     loaded = true,
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/telescope.nvim",
@@ -180,6 +198,13 @@ _G.packer_plugins = {
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/undotree",
     url = "https://github.com/mbbill/undotree"
   },
+  ["vim-cucumber"] = {
+    loaded = false,
+    needs_bufread = true,
+    only_cond = false,
+    path = "/home/christian/.local/share/nvim/site/pack/packer/opt/vim-cucumber",
+    url = "https://github.com/tpope/vim-cucumber"
+  },
   ["vim-fugitive"] = {
     loaded = true,
     path = "/home/christian/.local/share/nvim/site/pack/packer/start/vim-fugitive",
@@ -192,6 +217,28 @@ time([[Defining packer_plugins]], false)
 time([[Config for typescript-tools.nvim]], true)
 try_loadstring("\27LJ\2\nB\0\0\3\0\3\0\a6\0\0\0'\2\1\0B\0\2\0029\0\2\0004\2\0\0B\0\2\1K\0\1\0\nsetup\21typescript-tools\frequire\0", "config", "typescript-tools.nvim")
 time([[Config for typescript-tools.nvim]], false)
+-- Load plugins in order defined by `after`
+time([[Sequenced loading]], true)
+vim.cmd [[ packadd nvim-treesitter ]]
+vim.cmd [[ packadd render-markdown.nvim ]]
+
+-- Config for: render-markdown.nvim
+try_loadstring("\27LJ\2\nA\0\0\3\0\3\0\a6\0\0\0'\2\1\0B\0\2\0029\0\2\0004\2\0\0B\0\2\1K\0\1\0\nsetup\20render-markdown\frequire\0", "config", "render-markdown.nvim")
+
+time([[Sequenced loading]], false)
+vim.cmd [[augroup packer_load_aucmds]]
+vim.cmd [[au!]]
+  -- Filetype lazy-loads
+time([[Defining lazy-load filetype autocommands]], true)
+vim.cmd [[au FileType cucumber ++once lua require("packer.load")({'vim-cucumber'}, { ft = "cucumber" }, _G.packer_plugins)]]
+vim.cmd [[au FileType feature ++once lua require("packer.load")({'vim-cucumber'}, { ft = "feature" }, _G.packer_plugins)]]
+time([[Defining lazy-load filetype autocommands]], false)
+vim.cmd("augroup END")
+vim.cmd [[augroup filetypedetect]]
+time([[Sourcing ftdetect script at: /home/christian/.local/share/nvim/site/pack/packer/opt/vim-cucumber/ftdetect/cucumber.vim]], true)
+vim.cmd [[source /home/christian/.local/share/nvim/site/pack/packer/opt/vim-cucumber/ftdetect/cucumber.vim]]
+time([[Sourcing ftdetect script at: /home/christian/.local/share/nvim/site/pack/packer/opt/vim-cucumber/ftdetect/cucumber.vim]], false)
+vim.cmd("augroup END")
 
 _G._packer.inside_compile = false
 if _G._packer.needs_bufread == true then

@@ -1,8 +1,23 @@
-require('nvim-web-devicons').setup()
+local lsp = require("lsp-zero")
+local lspconfig = require("lspconfig")
+local cmp = require("cmp")
+local cmp_nvim_lsp = require("cmp_nvim_lsp")
 require("quesnok")
 
+-- telescope layout
+require('telescope').setup({
+    layout_config = {
+      vertical = { width = 0.5 },
+      -- other layout configuration here
+    },
+ pickers = {
+    find_files = {
+      theme = "dropdown",
+    }
+  },
+})
 
-local lsp=require("lsp-zero")
+-- Set sign icons for diagnostics
 lsp.set_sign_icons({
   error = '✘',
   warn = '▲',
@@ -10,55 +25,71 @@ lsp.set_sign_icons({
   info = '»'
 })
 
-lsp.default_keymaps({buffer = bufnr})
-lsp.on_attach(function(client, bufnr)
-  local opts = {buffer = bufnr, remap = false}
+-- Common on_attach function for all LSPs
+local function on_attach_client(client, bufnr)
+  local opts = { buffer = bufnr, remap = false }
+  vim.keymap.set("n", "gD", vim.lsp.buf.definition, opts)
+  vim.keymap.set("n", "gd", vim.lsp.buf.declaration, opts)
+  vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+  vim.keymap.set("n", "ge", vim.diagnostic.goto_next, opts)
+  vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+  vim.keymap.set("n", "<leader>vca", vim.lsp.buf.code_action, opts)
+  vim.keymap.set("n", "<leader>vrr", vim.lsp.buf.references, opts)
+  vim.keymap.set("n", "<leader>vrn", vim.lsp.buf.rename, opts)
+  vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, opts)
+end
 
-  vim.keymap.set("n", "gD", function() vim.lsp.buf.definition() end, opts)
-  vim.keymap.set("n", "gd", function() vim.lsp.buf.declaration() end, opts)
-  vim.keymap.set("n", "gi", function() vim.lsp.buf.implementation() end, opts)
-  vim.keymap.set("n", "ge", function() vim.diagnostic.goto_next() end, opts)
-  vim.keymap.set("n", "K", function() vim.lsp.buf.hover() end, opts)
-  vim.keymap.set("n", "<leader>vca", function() vim.lsp.buf.code_action() end, opts)
-  vim.keymap.set("n", "<leader>vrr", function() vim.lsp.buf.references() end, opts)
-  vim.keymap.set("n", "<leader>vrn", function() vim.lsp.buf.rename() end, opts)
-  vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, opts)
-end)
 
-local lspconfig=require("lspconfig")
+
+-- Enhanced capabilities for LSPs
+local capabilities = cmp_nvim_lsp.default_capabilities()
+
+-- LSP servers with default settings
+local servers = { 'jedi_language_server', 'lua_ls', 'typescript-tools', 'eslint', 'zls', 'jsonls', 'cucumber_language_server', 'shopify_theme_ls' }
+
+
+for _, server in ipairs(servers) do
+  lspconfig[server].setup {
+    capabilities = capabilities,
+    on_attach = on_attach_client
+  }
+end
+lsp.on_attach = on_attach_client
+-- Language-specific configurations
+-- Python
 lspconfig.jedi_language_server.setup({
-    init_options = {
-        completion = {
-                fuzzy = true,
-                eager = true,
-        },    workspace = {
-        symbols = {
-            ignoreFolders={}
-            }
-        }
-    },
+  init_options = {
+    completion = { fuzzy = true, eager = true },
+    workspace = { symbols = { ignoreFolders = {} } }
+  },
 
     on_attach = function(client, bufnr)
-        local lsp_zero = require('lsp-zero')
-        lsp_zero.on_attach(client, bufnr)
+        lsp.on_attach(client, bufnr)
         -- Rebind the "textDocument/implementation" keybinding
         vim.keymap.set('n', 'gr', vim.lsp.buf.references, { buffer = bufnr, desc = 'Go to references' })
     end
+
+})
+-- Python RUFF formatting
+lspconfig.ruff.setup({
+  on_attach = function(client, bufnr)
+    client.server_capabilities.documentFormattingProvider = true
+  end,
+})
+lspconfig.cucumber_language_server.setup({
+settings = {
+    cucumber = {
+        features = { "**/cypress/e2e/**/*.feature" },
+        glue = { "**/cypress/e2e/**/*.ts", "**/step_definitions/**/*.ts" },
+     },
+    }
 })
 
--- Enable the following language servers
-local servers = { 'jedi_language_server', 'lua_ls', 'typescript-tools', 'zls', 'jsonls' }
-for _, s in ipairs(servers) do
-  lspconfig[s].setup {
-    on_attach = lsp.on_attach,
-    capabilities = vim.lsp.protocol.make_client_capabilities(),
-  }
-end
-
+-- Lua
 lspconfig.lua_ls.setup({
 on_init = function(client)
     local path = client.workspace_folders[1].name
-    if vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc') then
+    if vim.uv.fs_stat(path..'/.luarc.json') or vim.uv.fs_stat(path..'/.luarc.jsonc') then
       return
     end
 
@@ -88,28 +119,39 @@ on_init = function(client)
 }
 )
 
-lspconfig.jsonls.setup({
-    filetypes = {"json", "jsonc"},
-    init_options = {provideFormatter = true}
-})
-vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
-    pattern = "*.locales",
-    command = "set filetype=json"
-})
+-- JSON
+lspconfig.jsonls.setup({ filetypes = {"json", "jsonc"}, init_options = { provideFormatter = true } })
 
+-- Shopify
 lspconfig.shopify_theme_ls.setup({
-    cmd = { "/usr/bin/shopify", "theme", "language-server" },
-    root_dir = require('lspconfig.util').root_pattern(".git", "config.yml"),
-    on_attach = lsp.on_attach,
+  cmd = { "/usr/bin/shopify", "theme", "language-server" },
+  root_dir = require('lspconfig.util').root_pattern(".git", "config.yml"),
 })
 
-require('lspconfig').zls.setup({})
-local cmp = require('cmp')
-
-cmp.setup({
-  sources = {
-    {name = 'nvim_lsp'},
+-- Typescript formatting
+lspconfig.eslint.setup({
+  bin = 'eslint', -- or `eslint_d`
+  code_actions = {
+    enable = true,
+    apply_on_save = {
+      enable = true,
+      types = { "directive", "problem", "suggestion", "layout" },
+    },
+    disable_rule_comment = {
+      enable = true,
+      location = "separate_line", -- or `same_line`
+    },
   },
+  diagnostics = {
+    enable = true,
+    report_unused_disable_directives = false,
+    run_on = "type", -- or `save`
+  },
+})
+
+-- Completion setup
+cmp.setup({
+  sources = { { name = 'nvim_lsp' } },
   snippet = {
     expand = function(args)
       require('luasnip').lsp_expand(args.body)
@@ -118,4 +160,43 @@ cmp.setup({
   mapping = cmp.mapping.preset.insert({}),
 })
 
-require('lspconfig').cucumber_language_server.setup({})
+-- diagnostics
+
+vim.diagnostic.config({
+  virtual_text = false,  -- Disable inline virtual text (optional)
+  float = {
+    source = "always",  -- Show source of diagnostic message
+    wrap = true,        -- Ensure long messages are wrapped
+    border = "rounded", -- Add a nice border around the float window
+    max_width = math.floor(vim.o.columns * 0.7), -- Limit width to avoid exceeding screen size
+    scope = "cursor"
+  },
+})
+vim.api.nvim_create_autocmd("CursorMoved", {
+  pattern = "*",
+  callback = function()
+    if #vim.diagnostic.get(0, { lnum = vim.api.nvim_win_get_cursor(0)[1] - 1 }) > 0 then
+      vim.diagnostic.open_float(nil, { focusable = false })
+    end
+  end,
+})
+
+-- Autocommands
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+  pattern = "*.locales",
+  command = "set filetype=json"
+})
+
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = { "*.ts", "*.tsx", "*.js", "*.jsx" },
+  callback = function()
+    vim.lsp.buf.format()  -- Uses tsserver or eslint
+  end,
+})
+
+--vim.api.nvim_create_autocmd("BufWritePre", {
+--  pattern = "*.py",
+--  callback = function()
+--    vim.lsp.buf.format()  -- Uses Ruff for formatting
+--  end,
+--})
