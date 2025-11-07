@@ -50,7 +50,7 @@ end
 local capabilities = cmp_nvim_lsp.default_capabilities()
 
 -- LSP servers with default settings
-local servers = { 'jedi_language_server', 'lua_ls', 'typescript-tools', 'eslint', 'zls', 'jsonls', 'cucumber_language_server', 'shopify_theme_ls' }
+local servers = { 'jedi_language_server', 'lua_ls', 'eslint', 'zls', 'jsonls', 'cucumber_language_server', 'shopify_theme_ls' }
 
 
 for _, server in ipairs(servers) do
@@ -60,6 +60,7 @@ for _, server in ipairs(servers) do
   }
 end
 lsp.on_attach = on_attach_client
+
 -- Language-specific configurations
 -- Python
 lspconfig.jedi_language_server.setup({
@@ -154,6 +155,12 @@ lspconfig.eslint.setup({
   },
 })
 
+--vim.api.nvim_create_autocmd({ "CursorMoved", "BufLeave" }, {
+--  callback = function()
+--    vim.diagnostic.hide(nil, 0) -- hide diagnostics for current buffer
+--  end,
+--})
+
 -- Completion setup
 cmp.setup({
   sources = { { name = 'nvim_lsp' } },
@@ -192,12 +199,6 @@ vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
   command = "set filetype=json"
 })
 
-vim.api.nvim_create_autocmd("BufWritePre", {
-  pattern = { "*.ts", "*.tsx", "*.js", "*.jsx" },
-  callback = function()
-    vim.lsp.buf.format()  -- Uses tsserver or eslint
-  end,
-})
 
 --vim.api.nvim_create_autocmd("BufWritePre", {
 --  pattern = "*.py",
@@ -205,3 +206,83 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 --    vim.lsp.buf.format()  -- Uses Ruff for formatting
 --  end,
 --})
+
+-- ESLint LSP (safe resolver)
+local util = lspconfig.util
+
+local function resolve_eslint_cmd(root_dir)
+  local local_bin = util.path.join(root_dir, "node_modules", ".bin", "vscode-eslint-language-server")
+  local global_bin = vim.fn.exepath("vscode-eslint-language-server")
+
+  local function cmd_for(bin)
+    if bin == nil or bin == "" then return nil end
+    if vim.fn.executable(bin) == 1 then
+      return { bin, "--stdio" }
+    else
+      -- not executable (or a plain JS file) → run via node
+      return { "node", bin, "--stdio" }
+    end
+  end
+
+  if util.path.is_file(local_bin) then
+    return cmd_for(local_bin)
+  end
+  return cmd_for(global_bin)
+end
+
+lspconfig.eslint.setup({
+  root_dir = util.root_pattern(
+    ".eslintrc",
+    ".eslintrc.mjs",
+    ".eslintrc.js",
+    ".eslintrc.cjs",
+    ".eslintrc.json",
+    "package.json",
+    ".git"
+  ),
+  cmd = (function()
+    local root = vim.fn.getcwd()
+    local cmd = resolve_eslint_cmd(root)
+    return cmd or { "eslint-language-server", "--stdio" } -- last-resort name
+  end)(),
+  settings = {
+    format = true,
+    -- set true only if you actually use flat config (eslint.config.js)
+    experimental = { useFlatConfig = false },
+      codeActionOnSave = {
+        enable = true,
+        mode = "all"
+      },
+
+  },
+  on_attach = function(client, bufnr)
+    -- format on save with ESLint only
+    vim.api.nvim_create_autocmd("BufWritePre", {
+      buffer = bufnr,
+      callback = function()
+        vim.lsp.buf.format({
+          async = false,
+          filter = function(srv) return srv.name == "eslint" end,
+        })
+      end,
+    })
+  end,
+})
+
+
+require("typescript-tools").setup {
+  on_attach = function(client, bufnr)
+    -- we’ll let Prettier handle formatting; disable tsserver formatting
+    client.server_capabilities.documentFormattingProvider = false
+    client.server_capabilities.documentRangeFormattingProvider = false
+  end,
+  settings = {
+    tsserver_max_memory = 4096,
+    tsserver_file_preferences = {
+      includeInlayParameterNameHints = "all",
+      includeInlayVariableTypeHints = true,
+      includeInlayFunctionLikeReturnTypeHints = true,
+      includeInlayEnumMemberValueHints = true,
+    },
+  },
+}
