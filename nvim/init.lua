@@ -4,6 +4,11 @@ local cmp = require("cmp")
 local cmp_nvim_lsp = require("cmp_nvim_lsp")
 require("quesnok")
 
+-- disable_netrw
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+--|nvim-tree.disable_netrw| `= false`
+--|nvim-tree.hijack_netrw| ` = true`
 -- telescope layout
 require('telescope').setup({
     layout_config = {
