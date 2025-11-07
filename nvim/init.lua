@@ -10,14 +10,28 @@ vim.g.loaded_netrwPlugin = 1
 --|nvim-tree.disable_netrw| `= false`
 --|nvim-tree.hijack_netrw| ` = true`
 -- telescope layout
+
 require('telescope').setup({
+defaults = {
     layout_config = {
-      vertical = { width = 0.5 },
-      -- other layout configuration here
+      horizontal = {
+            width = 0.95,
+            height = 0.6,
+            prompt_position = 'top',
+        },
+      mirror = true,
     },
+  },
  pickers = {
     find_files = {
       theme = "dropdown",
+      layout_strategy = 'vertical',
+      layout_config = {
+        width = function(_, cols, _) return cols end,                 -- all columns
+        height = function(_, _, lines) return math.floor(lines * .95) end,
+        preview_height = 0.5,
+        preview_cutoff = 0,
+        },
     }
   },
 })
