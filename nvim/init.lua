@@ -1,7 +1,7 @@
-local lsp = require("lsp-zero")
-local lspconfig = require("lspconfig")
+local lsp = vim.lsp
 local cmp = require("cmp")
 local cmp_nvim_lsp = require("cmp_nvim_lsp")
+local lsp_util = require("lspconfig.util")
 require("quesnok")
 
 -- disable_netrw
@@ -36,13 +36,17 @@ defaults = {
   },
 })
 
--- Set sign icons for diagnostics
-lsp.set_sign_icons({
-  error = '✘',
-  warn = '▲',
-  hint = '⚑',
-  info = '»'
-})
+local diagnostic_signs = {
+  Error = '✘',
+  Warn = '▲',
+  Hint = '⚑',
+  Info = '»',
+}
+
+for sign, icon in pairs(diagnostic_signs) do
+  local hl = 'DiagnosticSign' .. sign
+  vim.fn.sign_define(hl, {text = icon, texthl = hl, numhl = ''})
+end
 
 -- Common on_attach function for all LSPs
 local function on_attach_client(client, bufnr)
@@ -50,7 +54,7 @@ local function on_attach_client(client, bufnr)
   vim.keymap.set("n", "gD", vim.lsp.buf.definition, opts)
   vim.keymap.set("n", "gd", vim.lsp.buf.declaration, opts)
   vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
-  vim.keymap.set("n", "ge", vim.diagnostic.goto_next, opts)
+  vim.keymap.set("n", "ge", vim.diagnostic.jump, opts)
   vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
   vim.keymap.set("n", "<leader>vca", vim.lsp.buf.code_action, opts)
   vim.keymap.set("n", "<leader>vrr", vim.lsp.buf.references, opts)
@@ -58,45 +62,58 @@ local function on_attach_client(client, bufnr)
   vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, opts)
 end
 
+local function extend_on_attach(extra)
+  if not extra then
+    return on_attach_client
+  end
+  return function(client, bufnr)
+    on_attach_client(client, bufnr)
+    extra(client, bufnr)
+  end
+end
+
 
 
 -- Enhanced capabilities for LSPs
 local capabilities = cmp_nvim_lsp.default_capabilities()
 
--- LSP servers with default settings
-local servers = { 'jedi_language_server', 'lua_ls', 'eslint', 'zls', 'jsonls', 'cucumber_language_server', 'shopify_theme_ls' }
+-- LSP servers enabled by default
+local servers = {
+  'jedi_language_server',
+  'lua_ls',
+  'eslint',
+  'zls',
+  'jsonls',
+  'cucumber_language_server',
+  'shopify_theme_ls',
+  'ruff',
+  'ocamllsp'
+}
 
+lsp.config('*', {
+  capabilities = capabilities,
+  on_attach = on_attach_client,
+})
 
-for _, server in ipairs(servers) do
-  lspconfig[server].setup {
-    capabilities = capabilities,
-    on_attach = on_attach_client
-  }
-end
-lsp.on_attach = on_attach_client
-
--- Language-specific configurations
--- Python
-lspconfig.jedi_language_server.setup({
+lsp.config('jedi_language_server', {
   init_options = {
     completion = { fuzzy = true, eager = true },
     workspace = { symbols = { ignoreFolders = {} } }
   },
 
-    on_attach = function(client, bufnr)
-        lsp.on_attach(client, bufnr)
-        -- Rebind the "textDocument/implementation" keybinding
-        vim.keymap.set('n', 'gr', vim.lsp.buf.references, { buffer = bufnr, desc = 'Go to references' })
-    end
-
+  on_attach = extend_on_attach(function(_, bufnr)
+    -- Rebind the "textDocument/implementation" keybinding
+    vim.keymap.set('n', 'gr', vim.lsp.buf.references, { buffer = bufnr, desc = 'Go to references' })
+  end),
 })
 -- Python RUFF formatting
-lspconfig.ruff.setup({
-  on_attach = function(client, bufnr)
+lsp.config('ruff', {
+  on_attach = extend_on_attach(function(client)
     client.server_capabilities.documentFormattingProvider = true
-  end,
+  end),
 })
-lspconfig.cucumber_language_server.setup({
+
+lsp.config('cucumber_language_server', {
 settings = {
     cucumber = {
         features = { "**/cypress/e2e/**/*.feature" },
@@ -106,7 +123,7 @@ settings = {
 })
 
 -- Lua
-lspconfig.lua_ls.setup({
+lsp.config('lua_ls', {
 on_init = function(client)
     local path = client.workspace_folders[1].name
     if vim.uv.fs_stat(path..'/.luarc.json') or vim.uv.fs_stat(path..'/.luarc.jsonc') then
@@ -136,20 +153,19 @@ on_init = function(client)
   settings = {
     Lua = {}
   }
-}
-)
-
--- JSON
-lspconfig.jsonls.setup({ filetypes = {"json", "jsonc"}, init_options = { provideFormatter = true } })
-
--- Shopify
-lspconfig.shopify_theme_ls.setup({
-  cmd = { "/usr/bin/shopify", "theme", "language-server" },
-  root_dir = require('lspconfig.util').root_pattern(".git", "config.yml"),
 })
 
--- Typescript formatting
-lspconfig.eslint.setup({
+-- JSON
+lsp.config('jsonls', { filetypes = {"json", "jsonc"}, init_options = { provideFormatter = true } })
+
+-- Shopify
+lsp.config('shopify_theme_ls', {
+  cmd = { "/usr/bin/shopify", "theme", "language-server" },
+  root_dir = lsp_util.root_pattern(".git", "config.yml"),
+})
+
+-- ESLint.nvim helpers for formatting/code actions
+require("eslint").setup({
   bin = 'eslint', -- or `eslint_d`
   code_actions = {
     enable = true,
@@ -222,7 +238,7 @@ vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
 --})
 
 -- ESLint LSP (safe resolver)
-local util = lspconfig.util
+local util = lsp_util
 
 local function resolve_eslint_cmd(root_dir)
   local local_bin = util.path.join(root_dir, "node_modules", ".bin", "vscode-eslint-language-server")
@@ -244,7 +260,7 @@ local function resolve_eslint_cmd(root_dir)
   return cmd_for(global_bin)
 end
 
-lspconfig.eslint.setup({
+lsp.config('eslint', {
   root_dir = util.root_pattern(
     ".eslintrc",
     ".eslintrc.mjs",
@@ -255,9 +271,9 @@ lspconfig.eslint.setup({
     ".git"
   ),
   cmd = (function()
-    local root = vim.fn.getcwd()
+    local root = vim.loop.cwd()
     local cmd = resolve_eslint_cmd(root)
-    return cmd or { "eslint-language-server", "--stdio" } -- last-resort name
+    return cmd or { "eslint-language-server", "--stdio" }
   end)(),
   settings = {
     format = true,
@@ -269,8 +285,7 @@ lspconfig.eslint.setup({
       },
 
   },
-  on_attach = function(client, bufnr)
-    -- format on save with ESLint only
+  on_attach = extend_on_attach(function(_, bufnr)
     vim.api.nvim_create_autocmd("BufWritePre", {
       buffer = bufnr,
       callback = function()
@@ -280,16 +295,17 @@ lspconfig.eslint.setup({
         })
       end,
     })
-  end,
+  end),
 })
 
+lsp.enable(servers)
 
-require("typescript-tools").setup {
-  on_attach = function(client, bufnr)
-    -- we’ll let Prettier handle formatting; disable tsserver formatting
+
+require("typescript-tools").setup({
+  on_attach = extend_on_attach(function(client, bufnr)
     client.server_capabilities.documentFormattingProvider = false
     client.server_capabilities.documentRangeFormattingProvider = false
-  end,
+  end),
   settings = {
     tsserver_max_memory = 4096,
     tsserver_file_preferences = {
@@ -299,4 +315,4 @@ require("typescript-tools").setup {
       includeInlayEnumMemberValueHints = true,
     },
   },
-}
+})
