@@ -30,25 +30,20 @@ return require('packer').startup(function(use)
   -- treesitter --
   use('nvim-treesitter/nvim-treesitter', {run= ':TSUpdate'})
   use('nvim-treesitter/nvim-treesitter-context')
-  -- lsp-zero --
-  use {
-    'VonHeikemen/lsp-zero.nvim',
-    requires = {
-        -- LSP Support
-        {'williamboman/mason.nvim'},
-        {'williamboman/mason-lspconfig.nvim'},
-        {'neovim/nvim-lspconfig'},
-        -- Autocompletion
-        {'hrsh7th/nvim-cmp'},
-        {'hrsh7th/cmp-buffer'},
-        {'hrsh7th/cmp-path'},
-        {'hrsh7th/cmp-nvim-lsp'},
-        {'hrsh7th/cmp-nvim-lua'},
-    }
-}
 
   use({"HiPhish/rainbow-delimiters.nvim",})
 
+
+  -- lsp core --
+  use 'neovim/nvim-lspconfig'
+  use 'williamboman/mason.nvim'
+  use 'williamboman/mason-lspconfig.nvim'
+  -- completion --
+  use 'hrsh7th/nvim-cmp'
+  use 'hrsh7th/cmp-buffer'
+  use 'hrsh7th/cmp-path'
+  use 'hrsh7th/cmp-nvim-lsp'
+  use 'hrsh7th/cmp-nvim-lua'
     -- git blame
 use {'f-person/git-blame.nvim'}
 
