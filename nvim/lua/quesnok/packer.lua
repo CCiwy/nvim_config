@@ -46,6 +46,9 @@ return require('packer').startup(function(use)
         {'hrsh7th/cmp-nvim-lua'},
     }
 }
+
+  use({"HiPhish/rainbow-delimiters.nvim",})
+
     -- git blame
 use {'f-person/git-blame.nvim'}
 
