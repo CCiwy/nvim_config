@@ -269,24 +269,12 @@ vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
 -- ESLint LSP (safe resolver)
 local util = lsp_util
 
-local function resolve_eslint_cmd(root_dir)
-  local local_bin = util.path.join(root_dir, "node_modules", ".bin", "vscode-eslint-language-server")
-  local global_bin = vim.fn.exepath("vscode-eslint-language-server")
-
-  local function cmd_for(bin)
-    if bin == nil or bin == "" then return nil end
-    if vim.fn.executable(bin) == 1 then
-      return { bin, "--stdio" }
-    else
-      -- not executable (or a plain JS file) → run via node
-      return { "node", bin, "--stdio" }
+local function eslint_node_path(client)
+    local root = client.root_dir or ""
+    if root:match("/frontend$") then
+      return "node_modules"
     end
-  end
-
-  if util.path.is_file(local_bin) then
-    return cmd_for(local_bin)
-  end
-  return cmd_for(global_bin)
+    return "frontend/node_modules"
 end
 
 lsp.config('eslint', {
@@ -295,26 +283,26 @@ lsp.config('eslint', {
     ".eslintrc.mjs",
     ".eslintrc.js",
     ".eslintrc.cjs",
-    ".eslintrc.json",
-    "package.json",
-    ".git"
+    ".eslintrc.json"
   ),
-  cmd = (function()
-    local root = vim.loop.cwd()
-    local cmd = resolve_eslint_cmd(root)
-    return cmd or { "eslint-language-server", "--stdio" }
-  end)(),
+  cmd = { "vscode-eslint-language-server", "--stdio" },
   settings = {
+    eslint = {
+        validate = "on",
+        format = true,
+        run = "onSave",
+        workingDirectory = { mode = "location" },
+        nodePath = "node_modules",
+        experimental = { useFlatConfig = true }
+        },
+    validate = "on",
     format = true,
-    -- set true only if you actually use flat config (eslint.config.js)
-    experimental = { useFlatConfig = false },
-      codeActionOnSave = {
-        enable = true,
-        mode = "all"
-      },
-
-  },
-  on_attach = extend_on_attach(function(_, bufnr)
+    run = "onSave",
+    workingDirectory = { mode = "location" },
+    nodePath = "node_modules",
+    experimental = { useFlatConfig = true }
+    },
+  on_attach = extend_on_attach(function(client, bufnr)
     vim.api.nvim_create_autocmd("BufWritePre", {
       buffer = bufnr,
       callback = function()
