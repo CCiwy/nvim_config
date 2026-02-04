@@ -1,3 +1,4 @@
+require("quesnok.error_handling")
 require("quesnok.rainbow")
 require("quesnok.set")
 require("quesnok.packer")

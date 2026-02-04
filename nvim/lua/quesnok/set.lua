@@ -16,11 +16,11 @@ vim.opt.clipboard:append { 'unnamed', 'unnamedplus' }
 
 
 vim.api.nvim_set_hl(0, "CursorLineNr", {
-  fg = "#E6C384",
-  bold = true,
+    fg = "#E6C384",
+    bold = true,
 })
 
 vim.api.nvim_set_hl(0, "CursorLine", {
-  bg = "#2A2A2A",
+    bg = "#2A2A2A",
 })
 
