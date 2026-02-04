@@ -16,3 +16,30 @@ vim.keymap.set('n', '<C-l>', '<C-w>l')
 vim.keymap.set('n', '<C-k>', '<C-w>k')
 -- Remap "move to bottom split" to Ctrl+j
 vim.keymap.set('n', '<C-j>', '<C-w>j')
+
+
+-- telescope layout
+require('telescope').setup({
+    defaults = {
+        layout_config = {
+            horizontal = {
+                width = 0.95,
+                height = 0.6,
+                prompt_position = 'top',
+            },
+            mirror = true,
+        },
+    },
+    pickers = {
+        find_files = {
+            theme = "dropdown",
+            layout_strategy = 'vertical',
+            layout_config = {
+                width = function(_, cols, _) return cols end,                 -- all columns
+                height = function(_, _, lines) return math.floor(lines * .95) end,
+                preview_height = 0.65,
+                preview_cutoff = 0,
+            },
+        }
+    },
+})
