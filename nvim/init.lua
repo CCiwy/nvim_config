@@ -53,3 +53,23 @@ vim.api.nvim_create_autocmd("CursorMoved", {
         end
     end,
 })
+
+vim.api.nvim_create_autocmd("TermClose", {
+  callback = function(args)
+    local buf = args.buf
+    vim.schedule(function()
+      -- Close any windows that are still showing this terminal buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
+          -- force=true so it closes even if it's the last thing in that split
+          pcall(vim.api.nvim_win_close, win, true)
+        end
+      end
+
+      -- Then delete the buffer (usually already gone, but harmless)
+      if vim.api.nvim_buf_is_valid(buf) then
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      end
+    end)
+  end,
+})
