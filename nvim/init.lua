@@ -6,8 +6,6 @@ vim.g.loaded_netrwPlugin = 1
 --|nvim-tree.disable_netrw| `= false`
 --|nvim-tree.hijack_netrw| ` = true`
 
-
-
 -- COMPLETION SETUP
 local cmp = require("cmp")
 cmp.setup({
@@ -39,7 +37,7 @@ end
 vim.diagnostic.config({
     virtual_text = false,  -- Disable inline virtual text (optional)
     float = {
-        source = "always",  -- Show source of diagnostic message
+        source = "if_many",  -- Show source of diagnostic message
         wrap = true,        -- Ensure long messages are wrapped
         border = "rounded", -- Add a nice border around the float window
         max_width = math.floor(vim.o.columns * 0.7), -- Limit width to avoid exceeding screen size

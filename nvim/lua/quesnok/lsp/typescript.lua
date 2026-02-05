@@ -9,7 +9,8 @@ require("typescript-tools").setup({
         tsserver_max_memory = 4096,
         tsserver_file_preferences = {
             includeInlayParameterNameHints = "all",
-            includeInlayVariableTypeHints = true, includeInlayFunctionLikeReturnTypeHints = true,
+            includeInlayVariableTypeHints = true,
+            includeInlayFunctionLikeReturnTypeHints = true,
             includeInlayEnumMemberValueHints = true,
         },
     },

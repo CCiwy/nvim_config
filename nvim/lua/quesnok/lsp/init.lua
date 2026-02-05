@@ -1,7 +1,8 @@
+require('quesnok.lsp.clang')
 require('quesnok.lsp.lua_lsp')
-require('quesnok.lsp.typescript')
-require('quesnok.lsp.python')
 require('quesnok.lsp.odin')
+require('quesnok.lsp.python')
+require('quesnok.lsp.typescript')
 
 
 -- Enhanced capabilities for LSPs
