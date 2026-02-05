@@ -17,3 +17,14 @@ vim.api.nvim_create_autocmd({ "InsertLeave" }, {
         vim.api.nvim_set_hl(0, "Normal",  {bg=bg_color})
     end
 })
+
+
+vim.api.nvim_set_hl(0, "CursorLineNr", {
+    fg = "#E6C384",
+    bold = true,
+})
+
+vim.api.nvim_set_hl(0, "CursorLine", {
+    bg = "#2A2A2A",
+})
+
